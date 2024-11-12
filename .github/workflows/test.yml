@@ -1,0 +1,33 @@
+name: continuous integration
+
+on: push
+
+env:
+  KNOTS_VERSION: '27.1.knots20240801'
+  PYTHON_VERSION: '3.13'
+
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    env:
+      VENV_PATH: venv
+      VALGRIND: 0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: |
+          bash .github/scripts/install-knots.sh
+          bitcoind -regtest -deprecatedrpc=create_bdb &
+      - run: |
+          python -m venv ${{ env.VENV_PATH }}
+          echo "${{ env.VENV_PATH }}/bin" >> $GITHUB_PATH
+          source ${{ env.VENV_PATH }}/bin/activate
+          pip install pip-tools
+          pip-compile --strip-extras --extra dev
+          pip-sync
+      - run: bitcoin-cli -regtest -named createwallet wallet_name=testing descriptors=false
+      - run: python main.py
+      - if: ${{ always() }}
+        run: bitcoin-cli -regtest stop
