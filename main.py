@@ -1,7 +1,6 @@
 import asyncio
 from jsonrpc import dispatcher, JSONRPCResponseManager
 
-# Defineix una funció de prova per demostrar el funcionament
 @dispatcher.add_method
 def echo(message):
     return f"Echo: {message}"

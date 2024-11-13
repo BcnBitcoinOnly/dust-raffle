@@ -9,9 +9,6 @@ env:
 jobs:
   tests:
     runs-on: ubuntu-24.04
-    env:
-      VENV_PATH: venv
-      VALGRIND: 0
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -21,9 +18,9 @@ jobs:
           bash .github/scripts/install-knots.sh
           bitcoind -regtest -deprecatedrpc=create_bdb &
       - run: |
-          python -m venv ${{ env.VENV_PATH }}
-          echo "${{ env.VENV_PATH }}/bin" >> $GITHUB_PATH
-          source ${{ env.VENV_PATH }}/bin/activate
+          python -m venv venv
+          echo "venv/bin" >> $GITHUB_PATH
+          source venv/bin/activate
           pip install pip-tools
           pip-compile --strip-extras --extra dev
           pip-sync

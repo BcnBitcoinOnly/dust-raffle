@@ -17,32 +17,36 @@ Clients connect to the server and send soft-commitments to participate in the ra
 
 A soft commitment consists of a message and a signature.
 The message MUST be an outpoint in `txid:vout` format, like `4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b:0`
-The signature MUST be a valid ECDSA signature made with the private key of the address at the output.
-The outpoint MUST NOT be spent at the time of making the soft commitment.
+The signature MUST be a valid ECDSA signature made with the private key that unlocks the scriptPubKey at that outpoint.
+The outpoint MUST NOT be spent at the time of making the soft commitment. Attempting to double-spend a committed outpoint
+results in a ban from the service.
 
 A client might send as many soft-commitments as it wants during the registration phase.
 
 After making a soft commitment the client must keep the connection alive.
 
 The server will send regular keepalive messages, which the client must acknowledge.
-If the client drops the connection it will be excluded from the round.
+If the client closes the connection it will be excluded from the round.
 
 
 #### 2. Signing
 
-After a certain time has passed the server sends a message to all the clients still connected.
+After a certain time has passed the server sends a message to all the clients that submitted at least one
+soft commitment and are still connected.
 
-The message includes a blockheight which hasn't been reached yet, the total amount of sats in the raffle,
+The message includes a Bitcoin blockheight which hasn't been reached yet, the total amount of sats in the current raffle,
 a merkle root hash and the payout addresses of all the participants.
 
 Each client MUST return a signed transaction for each payout address.
-These transactions spend its own soft-committed UTXO and send the sats to each one of the payout addresses.
+These transactions spend its own soft-committed UTXO and send the total amount of sats to each one of the payout addresses.
 
 The SIGHASH of the signatures MUST be ALL|ANYONECANPAY.
+Individually these transactions are invalid because they spend more sats than they have in their inputs.
+But due to the non-standard SIGHASH they can be joined together, and the combined transaction is valid.
 
 The transactions MUST include an OP_RETURN with the blockheight the server committed to.
 
-Clients SHOULD validate the Merkle Root according to the Raffle Rules before signing any transaction.
+Clients SHOULD validate the Merkle Root according to the Raffle Rules before making any hard commitment.
 
 
 #### 3. Raffle
@@ -75,7 +79,7 @@ spends the raffle transaction (at 0 s/vB) paying as many fees from the prize as 
 
 ### Bans
 
-In the period between the server receiving all the hard commitments and the winner pending the raffle transaction, any of the
+In the period between the server receiving all the hard commitments and the winner getting the raffle transaction mined, any of the
 participants can double spend one of their inputs, and if their transaction gets mined first it will invalidate
 the raffle transaction.
 
@@ -86,8 +90,8 @@ participating in the raffle again for at least 3 months. Any other UTXOs will th
 
 ### Weaknesses
 
-The current design should be trustless, as the server does not receive funds at any point nor is
-able to cheat the participants.
+The current design trusts that the server will construct the correct transaction, but is actually capable of building
+and broadcasting a transaction to any of the participants. However, it cannot cheat without everyone noticing it.
 
 However, the clients are required to sign a large number of transactions. This design is only practical for
 UTXOs held in a hot wallet able to keep connected to the server for a long period of time and sign a large
