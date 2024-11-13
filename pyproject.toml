@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "dust-raffle"
 version = "0.0.1"
 dependencies = [
+    "json-rpc >= 1.15",
     "python-bitcoinlib >= 0.12"
 ]
 requires-python = ">= 3.11"

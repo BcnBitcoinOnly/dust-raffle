@@ -4,7 +4,7 @@ on: push
 
 env:
   KNOTS_VERSION: '27.1.knots20240801'
-  PYTHON_VERSION: '3.13'
+  PYTHON_VERSION: '3.11'
 
 jobs:
   tests:
@@ -28,6 +28,12 @@ jobs:
           pip-compile --strip-extras --extra dev
           pip-sync
       - run: bitcoin-cli -regtest -named createwallet wallet_name=testing descriptors=false
-      - run: python main.py
+      - run: |
+          python examples/p2wpkh.py
+          python main.py &
+          echo $! > server.pid
+      - run: pytest
       - if: ${{ always() }}
-        run: bitcoin-cli -regtest stop
+        run: |
+          bitcoin-cli -regtest stop
+          kill $(cat server.pid)
