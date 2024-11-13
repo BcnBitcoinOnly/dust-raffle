@@ -6,8 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "dust-raffle"
 version = "0.0.1"
 dependencies = [
+    "bitcoin-utils >= 0.7",
     "json-rpc >= 1.15",
-    "python-bitcoinlib >= 0.12"
 ]
 requires-python = ">= 3.11"
 readme = "README.md"
@@ -18,5 +18,5 @@ classifiers = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest >= 8.0"
+    "pytest >= 8.0",
 ]
