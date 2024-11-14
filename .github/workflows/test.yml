@@ -29,7 +29,10 @@ jobs:
           python examples/p2wpkh.py
           python main.py &
           echo $! > server.pid
-      - run: pytest
+      - run: |
+          python examples/raffle0.py
+          python examples/raffle1.py
+          pytest
       - if: ${{ always() }}
         run: |
           bitcoin-cli -regtest stop

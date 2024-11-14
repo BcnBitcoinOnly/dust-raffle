@@ -1,11 +1,12 @@
 from bitcoinutils.constants import SIGHASH_ALL, SIGHASH_ANYONECANPAY
 from bitcoinutils.keys import PrivateKey
-from bitcoinutils.script import Script
 from bitcoinutils.transactions import Transaction, TxInput, TxOutput, TxWitnessInput
 from bitcoinutils.setup import setup
 
+from utils import p2pkh_script, op_return_script
+
 RAFFLE_VERSION = b'\x00'
-BLOCKHEIGHT = 16837
+BLOCK_HEIGHT = 16837
 PRIVATE_KEY = 'cPGGXY5KSwFnLfes38WdVbCW3mT8buDwy4nbX6hqm9DP2SdV8Aya'
 ADDRESS = 'tb1qmxkjngwjfn64j8kdpzdmc4y5v24cxm2hdkqn5j'
 OUTPOINTS = [
@@ -15,10 +16,6 @@ OUTPOINTS = [
     ('f06623450749b9efcea14e24f682ffa7337a7b0023ec853226a491092ec09b52', 7),
 ]
 
-def bytes_num(n: int) -> int:
-    if n == 0:
-        return 1
-    return (n.bit_length() + 7) // 8
 
 def raffle_tx() -> Transaction:
     """
@@ -31,22 +28,20 @@ def raffle_tx() -> Transaction:
 
     assert ADDRESS == public_key.get_segwit_address().to_string()
 
-    script = Script(['OP_DUP', 'OP_HASH160', public_key.to_hash160(), 'OP_EQUALVERIFY', 'OP_CHECKSIG'])
-    op_return = Script(['OP_RETURN', (RAFFLE_VERSION + BLOCKHEIGHT.to_bytes(bytes_num(BLOCKHEIGHT), 'big')).hex()])
-
     txin0 = TxInput(OUTPOINTS[0][0], OUTPOINTS[0][1])
     txin1 = TxInput(OUTPOINTS[1][0], OUTPOINTS[1][1])
     txin2 = TxInput(OUTPOINTS[2][0], OUTPOINTS[2][1])
     txin3 = TxInput(OUTPOINTS[3][0], OUTPOINTS[3][1])
 
     txout0 = TxOutput(4000, public_key.get_segwit_address().to_script_pub_key())
-    txout1 = TxOutput(0, op_return)
+    txout1 = TxOutput(0, op_return_script(BLOCK_HEIGHT))
     tx = Transaction([txin0, txin1, txin2, txin3], [txout0, txout1], has_segwit=True)
 
-    sig0 = private_key.sign_segwit_input(tx, 0, script, 1000, SIGHASH_ALL|SIGHASH_ANYONECANPAY)
-    sig1 = private_key.sign_segwit_input(tx, 1, script, 1000, SIGHASH_ALL|SIGHASH_ANYONECANPAY)
-    sig2 = private_key.sign_segwit_input(tx, 2, script, 1000, SIGHASH_ALL|SIGHASH_ANYONECANPAY)
-    sig3 = private_key.sign_segwit_input(tx, 3, script, 1000, SIGHASH_ALL|SIGHASH_ANYONECANPAY)
+    script = p2pkh_script(public_key)
+    sig0 = private_key.sign_segwit_input(tx, 0, script, 1000, SIGHASH_ALL | SIGHASH_ANYONECANPAY)
+    sig1 = private_key.sign_segwit_input(tx, 1, script, 1000, SIGHASH_ALL | SIGHASH_ANYONECANPAY)
+    sig2 = private_key.sign_segwit_input(tx, 2, script, 1000, SIGHASH_ALL | SIGHASH_ANYONECANPAY)
+    sig3 = private_key.sign_segwit_input(tx, 3, script, 1000, SIGHASH_ALL | SIGHASH_ANYONECANPAY)
 
     tx.witnesses.append(TxWitnessInput([sig0, public_key.to_hex()]))
     tx.witnesses.append(TxWitnessInput([sig1, public_key.to_hex()]))
@@ -54,6 +49,7 @@ def raffle_tx() -> Transaction:
     tx.witnesses.append(TxWitnessInput([sig3, public_key.to_hex()]))
 
     return tx
+
 
 if __name__ == '__main__':
     setup("testnet")
